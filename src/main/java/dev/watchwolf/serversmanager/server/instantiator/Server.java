@@ -74,8 +74,7 @@ public class Server implements ServerMessageEvent {
 
     @Override
     public void onMessageEvent(String msg) {
-        // not needed, as `http.wire` (used to link stdio) already prints the data got on debug
-        //this.logger.traceEntry(null, msg);
+        this.logger.traceEntry(null, msg);
         Pattern serverStartedPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}\\] \\[Server thread\\/INFO\\]: Done \\([^)]+\\)! For help, type \\\"help\\\"$");
         if (serverStartedPattern.matcher(msg).find()) {
             try {
