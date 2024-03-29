@@ -118,6 +118,7 @@ public class ThrowableServerShould extends ServerShould {
     void notifyExceptionEvents() throws Exception {
         final AtomicReference<String> syncronizedObject = new AtomicReference<>(null);
         final String exception = """
+Error occurred while enabling MineIt-MineableGems v1.1 (Is it up to date?)
 java.lang.IllegalStateException: zip file closed
     at java.util.zip.ZipFile.ensureOpen(ZipFile.java:840) ~[?:?]
     at java.util.zip.ZipFile.getEntry(ZipFile.java:339) ~[?:?]
@@ -143,55 +144,8 @@ java.lang.IllegalStateException: zip file closed
         final String log = """
 [08:48:35] [Server thread/INFO]: [MineableGems] Enabling MineableGems v1.11.3
 [08:48:36] [Server thread/INFO]: [MineIt-MineableGems] Enabling MineIt-MineableGems v1.1
-[08:48:36] [Server thread/WARN]: java.lang.IllegalStateException: zip file closed
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.zip.ZipFile.ensureOpen(ZipFile.java:840)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.zip.ZipFile.getEntry(ZipFile.java:339)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.jar.JarFile.getEntry(JarFile.java:517)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.jar.JarFile.getJarEntry(JarFile.java:472)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.PluginClassLoader.findClass(PluginClassLoader.java:172)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:592)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.PluginClassLoader.loadClass0(PluginClassLoader.java:117)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.PluginClassLoader.loadClass(PluginClassLoader.java:112)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
-[08:48:36] [Server thread/WARN]: 	at com.rogermiranda1000.helper.RogerPlugin.onEnable(RogerPlugin.java:313)
-[08:48:36] [Server thread/WARN]: 	at com.rogermiranda1000.mineit.mineable_gems.MinableGems.onEnable(MinableGems.java:80)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.JavaPlugin.setEnabled(JavaPlugin.java:266)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.JavaPluginLoader.enablePlugin(JavaPluginLoader.java:342)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:480)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.craftbukkit.v1_20_R3.CraftServer.enablePlugin(CraftServer.java:541)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.craftbukkit.v1_20_R3.CraftServer.enablePlugins(CraftServer.java:455)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.loadWorld0(MinecraftServer.java:623)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.loadLevel(MinecraftServer.java:409)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.dedicated.DedicatedServer.e(DedicatedServer.java:250)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.w(MinecraftServer.java:1000)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.lambda$0(MinecraftServer.java:304)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.lang.Thread.run(Thread.java:840)
-[08:48:36] [Server thread/WARN]: java.lang.IllegalStateException: zip file closed
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.zip.ZipFile.ensureOpen(ZipFile.java:840)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.zip.ZipFile.getEntry(ZipFile.java:339)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.jar.JarFile.getEntry(JarFile.java:517)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.util.jar.JarFile.getJarEntry(JarFile.java:472)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.PluginClassLoader.findClass(PluginClassLoader.java:172)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:592)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.PluginClassLoader.loadClass0(PluginClassLoader.java:117)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.PluginClassLoader.loadClass(PluginClassLoader.java:112)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
-[08:48:36] [Server thread/WARN]: 	at com.rogermiranda1000.helper.RogerPlugin.onEnable(RogerPlugin.java:334)
-[08:48:36] [Server thread/WARN]: 	at com.rogermiranda1000.mineit.mineable_gems.MinableGems.onEnable(MinableGems.java:80)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.JavaPlugin.setEnabled(JavaPlugin.java:266)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.java.JavaPluginLoader.enablePlugin(JavaPluginLoader.java:342)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:480)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.craftbukkit.v1_20_R3.CraftServer.enablePlugin(CraftServer.java:541)
-[08:48:36] [Server thread/WARN]: 	at org.bukkit.craftbukkit.v1_20_R3.CraftServer.enablePlugins(CraftServer.java:455)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.loadWorld0(MinecraftServer.java:623)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.loadLevel(MinecraftServer.java:409)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.dedicated.DedicatedServer.e(DedicatedServer.java:250)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.w(MinecraftServer.java:1000)
-[08:48:36] [Server thread/WARN]: 	at net.minecraft.server.MinecraftServer.lambda$0(MinecraftServer.java:304)
-[08:48:36] [Server thread/WARN]: 	at java.base/java.lang.Thread.run(Thread.java:840)
 [08:48:36] [Server thread/INFO]: [MineIt-MineableGems] Disabling MineIt-MineableGems v1.1
-[08:48:36] [Server thread/ERROR]: Error occurred while enabling MineIt-MineableGems v1.1 (Is it up to date?)
-""" + exception + "\n[08:48:36] [Server thread/INFO]: Done (21.650s)! For help, type \"help\"";
+[08:48:36] [Server thread/ERROR]:\s""" + exception + "\n[08:48:36] [Server thread/INFO]: Done (21.650s)! For help, type \"help\"";
 
         ThrowableServer uut = (ThrowableServer) getServer();
         uut.subscribeToExceptionEvents((msg) -> {

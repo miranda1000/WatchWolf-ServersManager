@@ -7,6 +7,7 @@ import dev.watchwolf.server.ServerStopNotifier;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ThrowableServer extends Server {
@@ -72,11 +73,13 @@ public class ThrowableServer extends Server {
 
         if (this.exception == null) {
             // listen for new exceptions
-            Pattern startingExceptionPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}\\] \\[Server thread/ERROR\\]: ");
-            if (startingExceptionPattern.matcher(msg).find()) {
+            Pattern startingExceptionPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}\\] \\[Server thread/ERROR\\]: (.*)$");
+            Matcher matcher = startingExceptionPattern.matcher(msg);
+            if (matcher.find()) {
                 // following there's an exception
                 this.logger.info("Getting start of exception...");
-                this.exception = new StringBuilder();
+                this.exception = new StringBuilder()
+                        .append(matcher.group(1)); // add the start of exception
             }
         }
         else {
