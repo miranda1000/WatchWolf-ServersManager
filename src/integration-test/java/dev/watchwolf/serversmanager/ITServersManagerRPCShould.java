@@ -23,7 +23,7 @@ import static dev.watchwolf.serversmanager.server.ServerRequirements.getPrivateS
 import static dev.watchwolf.serversmanager.server.instantiator.ITDockerizedServerInstantiatorShould.getDockerClient;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Timeout(10*60)
+@Timeout(2*60)
 public class ITServersManagerRPCShould {
     private static Logger LOGGER = LogManager.getLogger(ITServersManagerRPCShould.class.getName());
 
@@ -44,6 +44,8 @@ public class ITServersManagerRPCShould {
                 0x00, 0x00,
                 // server type (flat)
                 0x01, 0x00,
+                // seed (none)
+                0x00, 0x00,
                 // maps & config files (arrays; all empty)
                 0x00, 0x00,
                 0x00, 0x00
@@ -147,9 +149,10 @@ public class ITServersManagerRPCShould {
 
     @AfterEach
     public void cleanup() throws Throwable {
-        ArrayList<Throwable> exceptions = null;
+        LOGGER.traceEntry();
+        ArrayList<Throwable> exceptions;
         synchronized (this.mainThreadExceptions) {
-            exceptions = this.mainThreadExceptions;
+            exceptions = new ArrayList<>(this.mainThreadExceptions);
         }
 
         LOGGER.info("Waiting for main thread to exit...");
@@ -178,9 +181,9 @@ public class ITServersManagerRPCShould {
             clientSocket.getOutputStream().write(getStartServerSequence());
 
             // we expect to get the IP
-            // from: servers manager ; return: yes ; operation: start server
-            int startPacket = getByte(in, 8*60_000);
+            int startPacket = getByte(in, 20_000);
 
+            // from: servers manager ; return: yes ; operation: start server
             assertEquals(0b0001_1_000, startPacket, "We were expecting a return from servers manager of the 'start server' request; got " + System.out.format("%08d%n", startPacket) + " instead");
             assertEquals(0b00000000, in.read());
             int ipLength = in.read() | (in.read()<<8);
@@ -191,6 +194,7 @@ public class ITServersManagerRPCShould {
             assertEquals(8001, Integer.valueOf(ip.split(":")[1]));
         } finally {
             // killing the server docker should also be treated as 'server closed'
+            LOGGER.info("docker cleanup");
             serverFolders = killAllDockerServers();
         }
 
@@ -205,6 +209,33 @@ public class ITServersManagerRPCShould {
 
     @Test
     public void supportMultipleSessions() throws Exception {
-        // TODO
+        try(Socket clientSocket = waitUntilReadyAndConnect("127.0.0.1", 8000);
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            Socket client2Socket = waitUntilReadyAndConnect("127.0.0.1", 8000);
+            BufferedReader in2 = new BufferedReader(new InputStreamReader(client2Socket.getInputStream()))) {
+            // send hardcoded "Start Server" sequence
+            LOGGER.info("Sending 'start server' request...");
+            clientSocket.getOutputStream().write(getStartServerSequence());
+            client2Socket.getOutputStream().write(getStartServerSequence());
+
+            // we expect to get the IP
+            int startPacket = getByte(in, 20_000);
+            int startPacket2 = getByte(in2, 20_000);
+
+            assertEquals(0b0001_1_000, startPacket, "We were expecting a return from servers manager of the 'start server' request; got " + System.out.format("%08d%n", startPacket) + " instead");
+            assertEquals(0b00000000, in.read());
+            int ipLength = in.read() | (in.read()<<8);
+            assertTrue(ipLength > 0, "Empty (or invalid array) got on client 1");
+            LOGGER.debug("Succeed reading the first `startServer` request");
+
+            assertEquals(0b0001_1_000, startPacket2, "We were expecting a return from servers manager of the 'start server' request from the second client; got " + System.out.format("%08d%n", startPacket2) + " instead");
+            assertEquals(0b00000000, in2.read());
+            ipLength = in2.read() | (in2.read()<<8);
+            assertTrue(ipLength > 0, "Empty (or invalid array) got on client 2");
+            LOGGER.debug("Succeed reading the second `startServer` request");
+        } finally {
+            LOGGER.info("docker cleanup");
+            killAllDockerServers();
+        }
     }
 }

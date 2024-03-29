@@ -10,7 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.net.BindException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServersManager {
     /**
@@ -21,7 +22,9 @@ public class ServersManager {
     private static Logger logger = LogManager.getLogger(ServersManager.class.getName());
 
     private static boolean started = false;
+    private static List<RPC> activeConnections = new ArrayList<>();
     private static MessageChannel serverSocketChannel = null;
+    private static Thread processDataThread = null;
 
     private static synchronized boolean isStarted() {
         return ServersManager.started;
@@ -40,14 +43,75 @@ public class ServersManager {
             synchronized (ServersManager.class) {
                 serverSocketChannel = rpcMaster._getRemoteConnection();
             }
-            rpcMaster.run();
         } catch (IOException ex) {
-            ex.printStackTrace();
+            logger.error(ex);
         }
 
+        if (rpcMaster == null) {
+            logger.info("Closing program as we couldn't establish the first connection");
+            stop();
+            return;
+        }
+
+        try {
+            rpcMaster.createConnection();
+        } catch (IOException|InterruptedException ex) {
+            logger.error("Got an error while trying to establish the first connection", ex);
+            stop();
+            return;
+        }
+        activeConnections.add(rpcMaster);
+
+        // read socket data thread
+        processDataThread = new Thread(() -> {
+            while (isStarted()) {
+                List<RPC> processing;
+                synchronized (ServersManager.class) {
+                    // delete already closed sessions
+                    activeConnections.stream().filter(connection -> !connection.isRunning()).forEach(connection -> {
+                        try {
+                            connection.close();
+                        } catch (IOException ignore) {}
+                    });
+                    activeConnections.removeIf(connection -> !connection.isRunning());
+
+                    processing = new ArrayList<>(activeConnections);
+                }
+
+                for (int index = 0; index < processing.size() && isStarted(); index++) {
+                    RPC currentlyProcessing = processing.get(index);
+                    try {
+                        currentlyProcessing.processOneCall();
+                    } catch (IOException ex) {
+                        logger.warn(ex);
+                    }
+
+                    try {
+                        Thread.sleep(200); // give it some break
+                    } catch (InterruptedException ignore) {}
+                }
+
+                try {
+                    Thread.sleep(200); // give it some break
+                } catch (InterruptedException ignore) {}
+            }
+        });
+        processDataThread.start();
+
         while (isStarted()) {
-            RPC serversManager = new RPCFactory().build(new ServersManagerLocalFactory(), rpcMaster);
-            serversManager.run();
+            try {
+                RPC serversManagerInstance = new RPCFactory().build(new ServersManagerLocalFactory(), rpcMaster);
+                serversManagerInstance.createConnection();
+                synchronized (ServersManager.class) {
+                    activeConnections.add(serversManagerInstance);
+                }
+            } catch (IOException|InterruptedException ex) {
+                logger.warn(ex);
+            }
+
+            try {
+                Thread.sleep(200); // give it some break
+            } catch (InterruptedException ignore) {}
         }
     }
 
@@ -58,7 +122,11 @@ public class ServersManager {
 
         // closing the server will cause all the `run()` to get unstuck
         try {
-            if (serverSocketChannel != null) serverSocketChannel.close();
+            if (serverSocketChannel != null && !serverSocketChannel.isClosed()) serverSocketChannel.close();
         } catch (IOException ignore) {}
+
+        try {
+            processDataThread.join(8_000);
+        } catch (InterruptedException ignore) {}
     }
 }
