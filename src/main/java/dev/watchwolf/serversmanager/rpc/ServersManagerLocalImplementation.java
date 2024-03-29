@@ -33,11 +33,11 @@ public class ServersManagerLocalImplementation implements ServersManagerPetition
     public void nop() throws IOException { }
 
     @Override
-    public String startServer(final String serverType, final String serverVersion, Collection<Plugin> plugins, WorldType worldType, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles) throws IOException {
+    public String startServer(final String serverType, final String serverVersion, Collection<Plugin> plugins, WorldType worldType, String seed, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles) throws IOException {
         System.out.println("Starting server...");
         try {
             // requesteeIpGetter will work because `startServer` gets called on a syncronized environment (by `forwardCall`), so we'll have the IP of the client calling this function
-            final ThrowableServer server = this.serversManager.startServer(serverType, serverVersion, plugins, worldType, maps, configFiles, this.requesteeIpGetter.getRequesteeIp());
+            final ThrowableServer server = this.serversManager.startServer(serverType, serverVersion, plugins, worldType, seed, maps, configFiles, this.requesteeIpGetter.getRequesteeIp());
 
             server.subscribeToServerStartedEvents(this.serverStartedEventManager);
             server.subscribeToServerStoppedEvents(() -> {

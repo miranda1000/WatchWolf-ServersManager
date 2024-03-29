@@ -83,7 +83,7 @@ settings:
      * @param targetFolder Out folder
      * @throws IOException Failed to create the file
      */
-    private static void setServerProperties(Path targetFolder, int port, WorldType serverType) throws IOException {
+    private static void setServerProperties(Path targetFolder, int port, WorldType serverType, String seed) throws IOException {
         String []serverProperties = new String[]{
                 "online-mode=false",
                 "white-list=true",
@@ -91,7 +91,8 @@ settings:
                 "max-players=100",
                 "spawn-protection=0",
                 "server-port=" + port,
-                "level-type=" + serverType.name().toUpperCase()
+                "level-type=" + serverType.name().toUpperCase(),
+                "level-seed=" + (seed == null ? "" : seed)
         };
 
         Files.write(targetFolder.resolve("server.properties"), String.join("\n", serverProperties).getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
@@ -168,7 +169,7 @@ settings:
         FileUtils.deleteDirectory(new File(serverFolder));
     }
 
-    public static String setupFolder(String serverType, String serverVersion, Collection<Plugin> plugins, WorldType worldType, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles, String jarName) throws IOException {
+    public static String setupFolder(String serverType, String serverVersion, Collection<Plugin> plugins, WorldType worldType, String seed, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles, String jarName) throws IOException {
         logger.traceEntry(null, serverType, serverVersion, plugins, worldType, maps, configFiles, jarName);
         if (!ServerRequirements.serverFolderInfoLogged) ServerRequirements.logServerFolderInfo();
 
@@ -185,7 +186,7 @@ settings:
             logger.debug("Generating timings configuration...");
             setTimingsSettings(serverFolder);
             logger.debug("Generating server properties file...");
-            setServerProperties(serverFolder, 25565, worldType);
+            setServerProperties(serverFolder, 25565, worldType, seed);
             logger.debug("Generating WW-server config file...");
             setWatchWolfServerProperties(serverFolder, "127.0.0.1" /* TODO unused by WW-Server (for now) */, 25566 /* TODO don't depend on DockerizedServerInstantiator#startServer ports */, System.getenv("MACHINE_IP").trim() + ":8000" /* deprecated */, "deprecated" /* deprecated */);
 

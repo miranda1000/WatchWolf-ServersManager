@@ -39,13 +39,14 @@ public class ServersManager implements Closeable {
      * @param serverVersion
      * @param plugins
      * @param worldType
+     * @param seed MC server seed; Empty if random
      * @param maps
      * @param configFiles
      * @param serverRequestee IP&Port WW-Tester is using
      * @return Created server IP&port
      */
-    public ThrowableServer startServer(String serverType, String serverVersion, Collection<Plugin> plugins, WorldType worldType, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles, InetSocketAddress serverRequestee) throws IOException,ServerJarUnavailableException {
-        final String path = ServerRequirements.setupFolder(serverType, serverVersion, plugins, worldType, maps, configFiles, TARGET_SERVER_JAR);
+    public ThrowableServer startServer(String serverType, String serverVersion, Collection<Plugin> plugins, WorldType worldType, String seed, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles, InetSocketAddress serverRequestee) throws IOException,ServerJarUnavailableException {
+        final String path = ServerRequirements.setupFolder(serverType, serverVersion, plugins, worldType, seed, maps, configFiles, TARGET_SERVER_JAR);
 
         System.out.println("Starting " + serverType + " " + serverVersion + " server on " + path + "...");
         Server server = this.serverInstantiator.startServer(Paths.get(path), TARGET_SERVER_JAR, DockerUtilities.getJavaVersion(serverVersion));

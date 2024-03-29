@@ -193,19 +193,20 @@ public class ServerRequirementsShould {
 
 
     private static Method getSetServerProperties() throws NoSuchMethodException {
-        Method method = ServerRequirements.class.getDeclaredMethod("setServerProperties", Path.class, int.class, WorldType.class);
+        Method method = ServerRequirements.class.getDeclaredMethod("setServerProperties", Path.class, int.class, WorldType.class, String.class);
         method.setAccessible(true);
         return method;
     }
 
-    private static Map<String, String> givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldType() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private static Map<String, String> givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix());
         Path dstPath = givenACreatedDestinyFolder(fileSystem);
         Path outFile = dstPath.resolve("server.properties");
         int port = 25555;
         WorldType type = WorldType.FLAT;
+        String seed = "1";
 
-        getSetServerProperties().invoke(null, dstPath, port, type);
+        getSetServerProperties().invoke(null, dstPath, port, type, seed);
 
         Map<String, String> contents = new HashMap<>();
         for (String line : Files.readAllLines(outFile)) {
@@ -227,9 +228,10 @@ public class ServerRequirementsShould {
         Path outFile = dstPath.resolve("server.properties");
         int port = 25555;
         WorldType type = WorldType.FLAT;
+        String seed = "";
 
         // act
-        getSetServerProperties().invoke(null, dstPath, port, type);
+        getSetServerProperties().invoke(null, dstPath, port, type, seed);
 
         // assert
         assertTrue(Files.exists(outFile)); // the file should exist
@@ -237,7 +239,7 @@ public class ServerRequirementsShould {
 
     @Test
     void setServerPropertiesPort() throws Exception {
-        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldType();
+        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1();
 
         // assert
         assertTrue(serverPropertiesContents.containsKey("server-port"), "Expected 'server-port' property to be set; got nothing instead");
@@ -247,7 +249,7 @@ public class ServerRequirementsShould {
 
     @Test
     void clearServerPropertiesSpawnProtection() throws Exception {
-        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldType();
+        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1();
 
         // assert
         assertTrue(serverPropertiesContents.containsKey("spawn-protection"), "Expected spawn chunks protection property to be specified; got otherwise instead");
@@ -257,7 +259,7 @@ public class ServerRequirementsShould {
 
     @Test
     void setServerPropertiesWorldType() throws Exception {
-        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldType();
+        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1();
 
         // assert
         assertTrue(serverPropertiesContents.containsKey("level-type"), "Expected 'level-type' property to be set; got nothing instead");
@@ -266,7 +268,7 @@ public class ServerRequirementsShould {
 
     @Test
     void setServerPropertiesOnlineMode() throws Exception {
-        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldType();
+        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1();
 
         // assert
         assertTrue(serverPropertiesContents.containsKey("online-mode"), "Expected online mode property to be specified; got otherwise instead");
@@ -276,12 +278,21 @@ public class ServerRequirementsShould {
 
     @Test
     void setServerPropertiesWhitelistMode() throws Exception {
-        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldType();
+        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1();
 
         // assert
         assertTrue(serverPropertiesContents.containsKey("white-list"), "Expected whitelist property to be specified; got otherwise instead");
         boolean whitelistMode = Boolean.parseBoolean(serverPropertiesContents.get("white-list"));
         assertTrue(whitelistMode, "Expected whitelist mode to be set; got otherwise instead");
+    }
+
+    @Test
+    void setServerSeed() throws Exception {
+        Map<String, String> serverPropertiesContents = givenAGeneratedServerPropertiesFileWithPort25555AndFlatWorldTypeAndSeed1();
+
+        // assert
+        assertTrue(serverPropertiesContents.containsKey("level-seed"), "Expected seed property (level-seed) to be specified; got otherwise instead");
+        assertEquals("1", serverPropertiesContents.get("level-seed"), "Expected seed to be '1'; got different thing instead");
     }
 
 
@@ -364,6 +375,7 @@ public class ServerRequirementsShould {
             String serverVersion = "1.20";
             Collection<Plugin> plugins = new ArrayList<>();
             WorldType worldType = WorldType.FLAT;
+            String seed = "";
             Collection<ConfigFile> maps = new ArrayList<>();
             Collection<ConfigFile> configFiles = new ArrayList<>();
             String jarName = TARGET_SERVER_JAR;
@@ -383,7 +395,7 @@ public class ServerRequirementsShould {
             setServerTypesFolder(sourcePath);
 
             // act
-            ServerRequirements.setupFolder(serverType, serverVersion, plugins, worldType, maps, configFiles, jarName);
+            ServerRequirements.setupFolder(serverType, serverVersion, plugins, worldType, seed, maps, configFiles, jarName);
 
             // assert
             List<String> foundPlugins = Files.list(pluginsPath)

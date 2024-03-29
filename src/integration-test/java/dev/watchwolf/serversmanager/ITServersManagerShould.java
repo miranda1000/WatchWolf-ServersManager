@@ -37,9 +37,10 @@ public class ITServersManagerShould {
         ServersManager serversManager = new ServersManager(new DockerizedServerInstantiator());
         ServersManagerPetitions serversManagerPetitions = new ServersManagerLocalImplementation(serversManager, onServerStart, capturedExceptionEventManager, ipGetter);
         ArrayList<Plugin> plugins = new ArrayList<>();
+        String seed = "1";
 
         // start the server
-        return serversManagerPetitions.startServer("Spigot", version, plugins, WorldType.FLAT, new ArrayList<>(), new ArrayList<>());
+        return serversManagerPetitions.startServer("Spigot", version, plugins, WorldType.FLAT, seed, new ArrayList<>(), new ArrayList<>());
     }
 
     public static String startServer(String version, ServerStartedEvent onServerStart) throws IOException {
