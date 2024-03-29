@@ -21,9 +21,6 @@ fi
 # download the latest ServersManager
 # TODO
 
-# some utilities
-wsl_mode(){ echo "echo 'Hello world'" | powershell.exe >/dev/null 2>&1; return $?; }
-
 # build the docker
 echo "[v] Building Docker container..."
-docker compose build --no-cache --build-arg WSL_MODE=$(wsl_mode ; echo $? | grep -c 0)
+docker compose build --no-cache

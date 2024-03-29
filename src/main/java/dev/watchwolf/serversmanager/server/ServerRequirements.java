@@ -101,14 +101,14 @@ settings:
     /**
      * Set custom timings for the getTimings request from WW-Server
      * @param targetFolder Out folder
+     * @param targetIp The ip that the server should listen to the requests (WW-Tester ip)
+     * @param port The port that the WW-Server socket should use
      * @throws IOException Failed to create the file
      */
-    private static void setWatchWolfServerProperties(Path targetFolder, String targetIp, int port, String replyIp, String key) throws IOException {
+    private static void setWatchWolfServerProperties(Path targetFolder, String targetIp, int port) throws IOException {
         String []watchwolfServerPropertie = new String[]{
                 "target-ip: " + targetIp,
-                "use-port: " + port,
-                "reply: " + replyIp,
-                "key: " + key
+                "use-port: " + port
         };
 
         Path watchwolfServerPath = targetFolder.resolve("plugins").resolve("WatchWolf");
@@ -188,7 +188,7 @@ settings:
             logger.debug("Generating server properties file...");
             setServerProperties(serverFolder, 25565, worldType, seed);
             logger.debug("Generating WW-server config file...");
-            setWatchWolfServerProperties(serverFolder, "127.0.0.1" /* TODO unused by WW-Server (for now) */, 25566 /* TODO don't depend on DockerizedServerInstantiator#startServer ports */, System.getenv("MACHINE_IP").trim() + ":8000" /* deprecated */, "deprecated" /* deprecated */);
+            setWatchWolfServerProperties(serverFolder, "127.0.0.1" /* TODO unused by WW-Server (for now) */, 25566 /* TODO don't depend on DockerizedServerInstantiator#startServer ports */);
 
             // export worlds
             logger.debug("Exporting worlds...");

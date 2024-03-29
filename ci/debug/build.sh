@@ -15,7 +15,7 @@ done
 
 # check for file dependencies
 if [ `ls . | grep -c -P 'watchwolf-server-[\d\.]+\.jar'` -ne 1 ]; then
-    echo "[e] Make sure to have the WW-Server .jar in the current directory (and only one instance)"
+    echo "[e] Make sure to have the WW-Server .jar in the current directory (and only one instance). The name must match 'watchwolf-server-<version>'"
     exit 1
 fi
 
@@ -55,9 +55,6 @@ echo "[v] Preparing WW-ServersManager jar file..."
 version=`ls '../../target' | grep -o -P '(?<=watchwolf-servers-manager-)[\d\.]+(?=\.jar)'`
 cp "../../target/watchwolf-servers-manager-$version.jar" ./ServersManager.jar
 
-# some utilities
-wsl_mode(){ echo "echo 'Hello world'" | powershell.exe >/dev/null 2>&1; return $?; }
-
 # build the docker
 echo "[v] Building Docker container..."
-docker compose build --no-cache --build-arg WSL_MODE=$(wsl_mode ; echo $? | grep -c 0)
+docker compose build --no-cache

@@ -303,7 +303,7 @@ public class ServerRequirementsShould {
 
 
     private static Method getSetWatchWolfServerProperties() throws NoSuchMethodException {
-        Method method = ServerRequirements.class.getDeclaredMethod("setWatchWolfServerProperties", Path.class, String.class, int.class, String.class, String.class);
+        Method method = ServerRequirements.class.getDeclaredMethod("setWatchWolfServerProperties", Path.class, String.class, int.class);
         method.setAccessible(true);
         return method;
     }
@@ -316,7 +316,7 @@ public class ServerRequirementsShould {
         int port = 8002;
 
         // act
-        getSetWatchWolfServerProperties().invoke(null, dstPath, "", port, "", "");
+        getSetWatchWolfServerProperties().invoke(null, dstPath, "", port);
 
         // assert
         assertTrue(Files.exists(outFile)); // the file should exist
