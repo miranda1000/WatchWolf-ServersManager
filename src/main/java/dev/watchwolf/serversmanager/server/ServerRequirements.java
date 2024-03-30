@@ -194,7 +194,7 @@ settings:
             logger.debug("Exporting worlds...");
             for (ConfigFile map : maps) {
                 if (!(map instanceof ZipFile)) throw new IllegalArgumentException("All worlds must be zips; got `." + map.getExtension() + "` instead.");
-                ((ZipFile)map).exportToDirectory(serverFolder);
+                ((ZipFile)map).exportToDirectory(serverFolder.resolve(map.getName()));
             }
 
             // export plugins
