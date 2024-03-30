@@ -13,6 +13,13 @@ import java.util.regex.Pattern;
 public class Server implements ServerMessageEvent {
     protected final Logger logger = LogManager.getLogger(this.getClass().getName());
 
+    /**
+     * '[18:47:41 <severity>]: ' or '[18:47:41] [Server thread/<severity>]: '
+     */
+    private final String headerRegex = "^\\[\\d{2}:\\d{2}:\\d{2}(?:(?:\\] \\[Server thread\\/{severity})|(?: {severity}))\\]: ";
+    protected final String headerInfoRegex = headerRegex.replace("{severity}", "INFO"),
+                            headerErrorRegex = headerRegex.replace("{severity}", "ERROR");
+
     private String ip;
     protected final Collection<ServerStartedEvent> serverStartedListeners;
     protected final Collection<ServerStopNotifier> serverStoppedListeners;
@@ -75,7 +82,7 @@ public class Server implements ServerMessageEvent {
     @Override
     public void onMessageEvent(String msg) {
         this.logger.traceEntry(null, msg);
-        Pattern serverStartedPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}\\] \\[Server thread\\/INFO\\]: Done \\([^)]+\\)! For help, type \\\"help\\\"$");
+        Pattern serverStartedPattern = Pattern.compile(headerInfoRegex + "Done \\([^)]+\\)! For help, type \\\"help\\\"$");
         if (serverStartedPattern.matcher(msg).find()) {
             try {
                 this.raiseServerStartedEvent(); // server started

@@ -73,7 +73,7 @@ public class ThrowableServer extends Server {
 
         if (this.exception == null) {
             // listen for new exceptions
-            Pattern startingExceptionPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}\\] \\[Server thread/ERROR\\]: (.*)$");
+            Pattern startingExceptionPattern = Pattern.compile(headerErrorRegex + "(.*)$");
             Matcher matcher = startingExceptionPattern.matcher(msg);
             if (matcher.find()) {
                 // following there's an exception
@@ -84,7 +84,7 @@ public class ThrowableServer extends Server {
         }
         else {
             // did the exception finish?
-            Pattern finishingExceptionPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}\\] \\[Server thread/");
+            Pattern finishingExceptionPattern = Pattern.compile("^\\[\\d{2}:\\d{2}:\\d{2}");
             if (finishingExceptionPattern.matcher(msg).find()) {
                 // exception completed; launch event
                 this.logger.debug("Exception completed; launching event...");

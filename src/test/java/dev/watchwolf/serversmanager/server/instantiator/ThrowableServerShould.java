@@ -167,6 +167,59 @@ java.lang.IllegalStateException: zip file closed
     }
 
     @Test
+    void notifyExceptionEventsOnOldVersions() throws Exception {
+        final AtomicReference<String> syncronizedObject = new AtomicReference<>(null);
+        final String exception = """
+Error occurred while enabling MineIt-MineableGems v1.1 (Is it up to date?)
+java.lang.IllegalStateException: zip file closed
+    at java.util.zip.ZipFile.ensureOpen(ZipFile.java:840) ~[?:?]
+    at java.util.zip.ZipFile.getEntry(ZipFile.java:339) ~[?:?]
+    at java.util.jar.JarFile.getEntry(JarFile.java:517) ~[?:?]
+    at java.util.jar.JarFile.getJarEntry(JarFile.java:472) ~[?:?]
+    at org.bukkit.plugin.java.PluginClassLoader.findClass(PluginClassLoader.java:172) ~[spigot-api-1.20.4-R0.1-SNAPSHOT.jar:?]
+    at java.lang.ClassLoader.loadClass(ClassLoader.java:592) ~[?:?]
+    at org.bukkit.plugin.java.PluginClassLoader.loadClass0(PluginClassLoader.java:117) ~[spigot-api-1.20.4-R0.1-SNAPSHOT.jar:?]
+    at org.bukkit.plugin.java.PluginClassLoader.loadClass(PluginClassLoader.java:112) ~[spigot-api-1.20.4-R0.1-SNAPSHOT.jar:?]
+    at java.lang.ClassLoader.loadClass(ClassLoader.java:525) ~[?:?]
+    at com.rogermiranda1000.mineit.mineable_gems.MinableGems.onEnable(MinableGems.java:83) ~[?:?]
+    at org.bukkit.plugin.java.JavaPlugin.setEnabled(JavaPlugin.java:266) ~[spigot-api-1.20.4-R0.1-SNAPSHOT.jar:?]
+    at org.bukkit.plugin.java.JavaPluginLoader.enablePlugin(JavaPluginLoader.java:342) ~[spigot-api-1.20.4-R0.1-SNAPSHOT.jar:?]
+    at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:480) ~[spigot-api-1.20.4-R0.1-SNAPSHOT.jar:?]
+    at org.bukkit.craftbukkit.v1_20_R3.CraftServer.enablePlugin(CraftServer.java:541) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at org.bukkit.craftbukkit.v1_20_R3.CraftServer.enablePlugins(CraftServer.java:455) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at net.minecraft.server.MinecraftServer.loadWorld0(MinecraftServer.java:623) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at net.minecraft.server.MinecraftServer.loadLevel(MinecraftServer.java:409) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at net.minecraft.server.dedicated.DedicatedServer.e(DedicatedServer.java:250) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at net.minecraft.server.MinecraftServer.w(MinecraftServer.java:1000) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at net.minecraft.server.MinecraftServer.lambda$0(MinecraftServer.java:304) ~[spigot-1.20.4-R0.1-SNAPSHOT.jar:4042-Spigot-c198da2-7e43f3b]
+    at java.lang.Thread.run(Thread.java:840) ~[?:?]""";
+        final String log = """
+[08:48:35 INFO]: [MineableGems] Enabling MineableGems v1.11.3
+[08:48:36 INFO]: [MineIt-MineableGems] Enabling MineIt-MineableGems v1.1
+[08:48:36 INFO]: [MineIt-MineableGems] Disabling MineIt-MineableGems v1.1
+[08:48:36 ERROR]:\s""" + exception + "\n[08:48:36 INFO]: Done (21.650s)! For help, type \"help\"";
+
+        ThrowableServer uut = (ThrowableServer) getServer();
+        uut.subscribeToExceptionEvents((msg) -> {
+            synchronized (syncronizedObject) {
+                syncronizedObject.set(msg);
+                syncronizedObject.notify();
+            }
+        });
+
+        // exceptions are processed through the regular messages
+        for (String logLine : log.split("\n")) {
+            uut.raiseServerMessageEvent(logLine); // we'll get the messagess one by one
+        }
+
+        synchronized (syncronizedObject) {
+            syncronizedObject.wait(WAIT_TIMEOUT);
+            assertNotNull(syncronizedObject.get(), "Expected exception raised; got nothing instead");
+            assertEquals(exception, syncronizedObject.get(), "Strings don't match:\n  Expecting:\n" + exception + "\n  Got:\n" + syncronizedObject.get());
+        }
+    }
+
+    @Test
     void notifyNoExceptionIfSetupSuccessfully() throws Exception {
         final ArrayList<String> syncronizedObject = new ArrayList<>();
         final String log = """
