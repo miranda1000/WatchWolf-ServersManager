@@ -162,7 +162,7 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
             containerPorts.add(port.getPublicPort());
         }
 
-        List<Integer> ports = containerPorts.stream().toList();
+        List<Integer> ports = containerPorts.stream().sorted().toList();
         if (containerPorts.size() != 2) throw new IllegalArgumentException("Expecting 2 ports on docker container " + containerId + "; got " + ports.toString() + " instead");
         if (ports.get(0) != ports.get(1)-1) System.err.println("Expecting docker container ports to be consecutive; got " + ports.toString() + " instead");
 
