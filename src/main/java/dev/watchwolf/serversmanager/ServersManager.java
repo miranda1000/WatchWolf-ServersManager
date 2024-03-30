@@ -70,6 +70,7 @@ public class ServersManager {
                     // delete already closed sessions
                     activeConnections.stream().filter(connection -> !connection.isRunning()).forEach(connection -> {
                         try {
+                            logger.debug("Will close " + connection.toString() + " (as it's already closed)...");
                             connection.close();
                         } catch (IOException ignore) {}
                     });
@@ -102,6 +103,7 @@ public class ServersManager {
             try {
                 RPC serversManagerInstance = new RPCFactory().build(new ServersManagerLocalFactory(), rpcMaster);
                 serversManagerInstance.createConnection();
+                logger.debug("New connection: " + serversManagerInstance.toString());
                 synchronized (ServersManager.class) {
                     activeConnections.add(serversManagerInstance);
                 }
@@ -113,6 +115,7 @@ public class ServersManager {
                 Thread.sleep(200); // give it some break
             } catch (InterruptedException ignore) {}
         }
+        logger.info("ServersManaged is closed; won't create new connections");
     }
 
     // TODO call on ctrl-c

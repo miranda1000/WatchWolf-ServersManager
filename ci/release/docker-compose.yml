@@ -6,6 +6,7 @@ services:
     volumes:
       - ./server-types:/servers/server-types
       - ./usual-plugins:/servers/usual-plugins
+      - ./logs:/servers/logs
       - ./tmp:/servers/tmp
       - /var/run/docker.sock:/var/run/docker.sock # allow the docker to start other dockers
     ports:
