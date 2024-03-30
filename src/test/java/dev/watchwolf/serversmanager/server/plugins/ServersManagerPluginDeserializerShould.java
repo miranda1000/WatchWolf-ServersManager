@@ -63,4 +63,14 @@ public class ServersManagerPluginDeserializerShould {
                     "Expected to get no compatible versions of a plugin that isn't there; got something instead");
         }
     }
+
+    @Test
+    public void getSpigotPluginDownloadUrl() throws Exception {
+        String pluginUrl = "https://www.spigotmc.org/resources/portalgun-1-8-1-20.44746/";
+        String expectedDownloadUrl = "https://api.spiget.org/v2/resources/44746/download";
+
+        String got = ServersManagerPluginDeserializer.getSpigotDownloadUrl(pluginUrl);
+
+        assertEquals(expectedDownloadUrl, got);
+    }
 }

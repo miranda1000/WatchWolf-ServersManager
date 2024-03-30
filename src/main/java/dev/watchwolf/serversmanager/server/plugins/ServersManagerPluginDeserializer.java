@@ -8,16 +8,18 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ServersManagerPluginDeserializer implements PluginDeserializer {
     private static final Path usualPluginsFolder = Paths.get( (System.getenv("SERVER_PATH_SHIFT") == null) ? "." : System.getenv("SERVER_PATH_SHIFT") ).resolve("usual-plugins");
@@ -53,11 +55,31 @@ public class ServersManagerPluginDeserializer implements PluginDeserializer {
         else if (plugin instanceof UploadedPlugin) {
             UploadedPlugin uploadedPlugin = (UploadedPlugin)plugin;
             logger.debug("Got UploadedPlugin: " + uploadedPlugin.toString());
-            logger.error("Download UploadedPlugins is still not implemented on WW-ServersManager"); // TODO
+            String pluginUrl = uploadedPlugin.getUrl();
+            try {
+                pluginUrl = getSpigotDownloadUrl(pluginUrl);
+                logger.debug("UploadedPlugin is a Spigot plugin; new url: " + pluginUrl);
+            } catch (IllegalArgumentException ignore) {} // it wasn't a spigot plugin
+            downloadPlugin(pluginUrl, outDirectory.toPath());
         }
         else throw logger.throwing(new IllegalArgumentException("Couldn't deserialize plugin of type " + plugin.getClass().getName()));
 
         logger.traceExit();
+    }
+
+    public static String getSpigotDownloadUrl(String url) throws IllegalArgumentException {
+        Pattern spigotIdPattern = Pattern.compile("spigotmc.org/resources/.*?(\\d+)/?$");
+        Matcher match = spigotIdPattern.matcher(url);
+        if (!match.find()) throw new IllegalArgumentException("You have to provide a spigot url");
+
+        String pluginId = match.group(1);
+        return "https://api.spiget.org/v2/resources/" + pluginId + "/download";
+    }
+
+    public static void downloadPlugin(String url, Path pluginsFolder) throws IOException {
+        String pluginName = System.currentTimeMillis() + ".jar"; // we don't care about the name; we could get if from the url header
+        InputStream in = new URL(url).openStream();
+        Files.copy(in, pluginsFolder.resolve(pluginName), StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**
