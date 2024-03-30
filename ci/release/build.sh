@@ -19,7 +19,8 @@ if [ `ls -l server-types 2>&1 | grep -c '^d'` -eq 0 ]; then
 fi
 
 # download the latest ServersManager
-# TODO
+latest_program_url=$(wget -q -O - 'https://api.github.com/repos/rogermiranda1000/WatchWolf-ServersManager/releases/latest' | jq -r '.assets[] | select( .name | endswith(".jar") ) | .browser_download_url')
+wget -O "ServersManager.jar" "$latest_program_url"
 
 # build the docker
 echo "[v] Building Docker container..."
