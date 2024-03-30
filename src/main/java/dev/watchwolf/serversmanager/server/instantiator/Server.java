@@ -82,7 +82,7 @@ public class Server implements ServerMessageEvent {
     @Override
     public void onMessageEvent(String msg) {
         this.logger.traceEntry(null, msg);
-        Pattern serverStartedPattern = Pattern.compile(headerInfoRegex + "Done \\([^)]+\\)! For help, type \\\"help\\\"$");
+        Pattern serverStartedPattern = Pattern.compile(headerInfoRegex + "Done \\([^)]+\\)! For help, type \\\"help\\\"( or \\\"\\?\\\")?$");
         if (serverStartedPattern.matcher(msg).find()) {
             try {
                 this.raiseServerStartedEvent(); // server started

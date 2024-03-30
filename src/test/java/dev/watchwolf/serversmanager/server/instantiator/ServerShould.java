@@ -112,29 +112,27 @@ public class ServerShould {
             }
         });
 
-        final String startupSequence = """
-[18:47:41 INFO]: Preparing level "world"
-[18:47:44 INFO]: Preparing start region for dimension minecraft:overworld
-[18:47:44 INFO]: Time elapsed: 118 ms
-[18:47:44 INFO]: Preparing start region for dimension minecraft:the_nether
-[18:47:44 INFO]: Time elapsed: 101 ms
-[18:47:44 INFO]: Preparing start region for dimension minecraft:the_end
-[18:47:44 INFO]: Time elapsed: 81 ms
-[18:47:45 INFO]: [MineIt] WorldGuard plugin detected.
-[18:47:45 INFO]: Running delayed init tasks
-"""; // next we get the 'Done' message
-
-        for (String line : startupSequence.split("\n")) uut.raiseServerMessageEvent(line);
+        uut.raiseServerMessageEvent("[09:36:31 INFO]: Done (32.378s)! For help, type \"help\"");
 
         synchronized (syncronizedObject) {
-            // we didn't launch the event, so nothing should invoke
-            try {
-                syncronizedObject.wait(SMALL_ASSERT_TIMEOUT);
-            } catch (InterruptedException ignored) {}
-            assertEquals(0, syncronizedObject.get(), "Event was raised before invoking the function");
+            syncronizedObject.wait(WAIT_TIMEOUT);
+            assertEquals(1, syncronizedObject.get(), "Event was " + ((syncronizedObject.get() == 0) ? "not risen" : "risen more than once"));
         }
+    }
 
-        uut.raiseServerMessageEvent("[09:36:31 INFO]: Done (32.378s)! For help, type \"help\"");
+    @Test
+    void detectServerStartedByMessageOnOldPaperVersions() throws Exception {
+        final AtomicInteger syncronizedObject = new AtomicInteger(0);
+
+        Server uut = getServer();
+        uut.subscribeToServerStartedEvents(() -> {
+            synchronized (syncronizedObject) {
+                syncronizedObject.incrementAndGet();
+                syncronizedObject.notify();
+            }
+        });
+
+        uut.raiseServerMessageEvent("[09:36:31 INFO]: Done (32.378s)! For help, type \"help\" or \"?\"");
 
         synchronized (syncronizedObject) {
             syncronizedObject.wait(WAIT_TIMEOUT);
