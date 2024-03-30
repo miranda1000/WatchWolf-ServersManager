@@ -1,0 +1,8 @@
+*.jar
+
+server-types/*
+usual-plugins/*
+
+# servers
+tmp/*
+logs/*
