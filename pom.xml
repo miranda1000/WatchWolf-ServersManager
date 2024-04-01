@@ -6,7 +6,7 @@
 
   <groupId>dev.watchwolf</groupId>
   <artifactId>watchwolf-servers-manager</artifactId>
-  <version>0.3</version>
+  <version>0.3.0.1</version>
   <packaging>jar</packaging>
 
   <properties>
