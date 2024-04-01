@@ -143,7 +143,9 @@ settings:
 
             // print all server types got
             Map<String, List<String>> serversAvailable = new HashMap<>();
-            for (Path serverType : Files.list(serverTypesFolder).collect(Collectors.toList())) {
+            for (Path serverType : Files.list(serverTypesFolder)
+                                            .filter(path -> Files.isDirectory(path))
+                                            .collect(Collectors.toList())) {
                 serversAvailable.put(serverType.getFileName().toString(),
                         Files.list(serverType)
                                 .map(f -> f.getFileName().toString())
@@ -154,7 +156,7 @@ settings:
             }
             ServerRequirements.logger.info("Servers available: " + serversAvailable.toString());
         } catch (IOException ex) {
-            ServerRequirements.logger.error("Couldn't get information about the server folder", ex);
+            ServerRequirements.logger.warn("Couldn't get information about the server folder", ex);
         } finally {
             ServerRequirements.serverFolderInfoLogged = true;
         }
