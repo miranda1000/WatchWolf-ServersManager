@@ -8,8 +8,8 @@ The ServersManager is responsable of implementing WatchWolf ServersManager's pro
 
 - [Docker](https://www.docker.com/get-started/)
 - Installed Docker images: `docker pull openjdk:8`, `docker pull openjdk:16`, `docker pull openjdk:17`
-- TBD
+- [WatchWolf - Core release](https://github.com/watch-wolf/WatchWolf-Core/releases) specified on the `pom.xml`; place the `.jar` inside the `lib/` folder
 
 ## Compile
 
-- Run `mvn clean compile assembly:single -DskipTests=true`
+- Run `./ci/debug/build.sh --preclean`
