@@ -185,6 +185,13 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
         logger.traceExit();
     }
 
+    private static String getDockerImageForJavaVersion(int javaVersion) {
+        logger.traceEntry(null, javaVersion);
+        String jdk_docker = "openjdk";
+        String image = jdk_docker + ":" + javaVersion;
+        return logger.traceExit(image);
+    }
+
     @Override
     public Server startServer(Path folderLocation, String entrypoint, int javaVersion) {
         synchronized (DockerizedServerInstantiator.class) {
@@ -204,7 +211,8 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
             // equivalent to:
             // docker run -i --rm --name "$id" -p "$port:$port/tcp" -p "$port:$port/udp" -p "$socket_port:$socket_port" ${memory:+"--memory=$memory"} ${cpus:+"--cpus=$cpus"} -v "$(pwd)/$path":/server "openjdk:$java_version"
             // TODO specify max memory
-            container = dockerClient.createContainerCmd("openjdk:" + javaVersion)
+            String dockerImage = DockerizedServerInstantiator.getDockerImageForJavaVersion(javaVersion);
+            container = dockerClient.createContainerCmd(dockerImage)
                     .withName(serverId)
                     .withHostConfig(new HostConfig()
                             .withPortBindings(
