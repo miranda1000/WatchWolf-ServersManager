@@ -50,7 +50,8 @@ function buildVersion {
 	get_java_version "$mc_version"
 	java_version="$?"
 	
+	# TODO use an image with git already installed
 	pre_cmd="apt-get update && apt-get install -y git"
 	cmd="$pre_cmd; mkdir BuildTools; cd BuildTools; curl -k -z BuildTools.jar -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar && java -jar BuildTools.jar --rev $mc_version && cp spigot-$mc_version.jar /Versions/$mc_version.jar"
-	sudo docker run -i --rm  --name "Spigot_build_$2" -v "$1":/Versions "eclipse-temurin:${java_version}-jdk" /bin/bash -c "$cmd"
+	sudo docker run -i --rm --detach --name "Spigot_build_$2" -v "$1":/Versions "eclipse-temurin:${java_version}-jdk" /bin/bash -c "$cmd"
 }
