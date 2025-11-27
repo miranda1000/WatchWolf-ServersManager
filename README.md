@@ -7,7 +7,7 @@ The ServersManager is responsable of implementing WatchWolf ServersManager's pro
 ## Dependencies
 
 - [Docker](https://www.docker.com/get-started/)
-- Installed Docker images: `docker pull openjdk:8`, `docker pull openjdk:16`, `docker pull openjdk:17`
+- Installed Docker images: `docker pull eclipse-temurin:8-jdk`, `docker pull eclipse-temurin:16-jdk`, `docker pull eclipse-temurin:17-jdk`, `docker pull eclipse-temurin:21-jdk`
 - [WatchWolf - Core release](https://github.com/watch-wolf/WatchWolf-Core/releases) specified on the `pom.xml`; place the `.jar` inside the `lib/` folder
 
 ## Compile
