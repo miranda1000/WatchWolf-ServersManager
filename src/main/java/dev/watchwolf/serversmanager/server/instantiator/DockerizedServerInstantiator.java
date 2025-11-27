@@ -187,8 +187,7 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
 
     private static String getDockerImageForJavaVersion(int javaVersion) {
         logger.traceEntry(null, javaVersion);
-        String jdk_docker = "openjdk";
-        String image = jdk_docker + ":" + javaVersion;
+        String image = "eclipse-temurin:" + javaVersion + "-jdk";
         return logger.traceExit(image);
     }
 

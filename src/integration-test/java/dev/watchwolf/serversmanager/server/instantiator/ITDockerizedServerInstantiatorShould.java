@@ -63,7 +63,7 @@ public class ITDockerizedServerInstantiatorShould {
             }
         }
 
-        CreateContainerResponse container = getDockerClient().createContainerCmd("openjdk:8")
+        CreateContainerResponse container = getDockerClient().createContainerCmd("eclipse-temurin:8-jdk")
                 .withName(serverId)
                 .withEntrypoint("/bin/sh", "-c")
                 .withHostConfig(new HostConfig()
@@ -144,7 +144,7 @@ public class ITDockerizedServerInstantiatorShould {
         CreateContainerResponse container = null;
         try {
             int portToUse = DEFAULT_PORT+1;
-            container = getDockerClient().createContainerCmd("openjdk:8")
+            container = getDockerClient().createContainerCmd("eclipse-temurin:8-jdk")
                     .withName("my-other-service")
                     .withHostConfig(new HostConfig()
                             .withPortBindings(PortBinding.parse(portToUse + ":" + portToUse + "/tcp"))
