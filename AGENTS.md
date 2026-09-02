@@ -109,3 +109,12 @@ Ports: the manager is on **8000**; each server takes a **consecutive pair** star
 - `src/tools/{SpigotBuilder,PaperBuilder}.sh` are legacy and are `source`d by `WatchWolfSetup.sh`
   in the WatchWolf repo. Their README asks for them to be ported into Java; until then, keep the
   function names (`getAllVersions`, `buildVersion`, `getAllPaperVersions`, `buildPaperVersion`).
+
+## Git conventions
+
+- **`dev` is the working branch.** Every WatchWolf repo integrates and releases from `dev`.
+  `master` (`main` in the WatchWolf standard repo) is downstream of it — never commit there
+  directly, and never open a PR against it.
+- **One branch per change, named for its kind:** `fix/<topic>` for defects, `feature/<topic>` for
+  new work. Branch from `dev`.
+- **Always open a PR into `dev`.** Do not push straight to `dev`, even for a one-line change.
