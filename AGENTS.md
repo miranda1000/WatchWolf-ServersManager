@@ -67,8 +67,8 @@ host. Paths inside the config therefore have to be host paths — that is what `
 
 | Env var | Meaning |
 | --- | --- |
-| `MACHINE_IP` | LAN IP handed to testers on the same network |
-| `PUBLIC_IP` | IP handed to testers coming from outside |
+| `MACHINE_IP` | LAN IP handed to testers on the same network (**fallback**, see below) |
+| `PUBLIC_IP` | IP handed to testers coming from outside (**fallback**, see below) |
 | `PARENT_PWD` | Host path of `ci/<flavour>/`, so bind mounts resolve |
 | `SERVER_PATH_SHIFT` | Prefix for `server-types/`, `tmp/`, `logs/` (`.` in the container) |
 
@@ -104,6 +104,24 @@ Ports: the manager is on **8000**; each server takes a **consecutive pair** star
 - `RequesteeIpGetter` works because `startServer` is invoked from inside `forwardCall`'s
   `synchronized` block, so "the last channel we read from" is the caller. Keep that invariant if
   you touch threading.
+- **`ReachedAddressIpManager` decides the address `startServer` answers with**, preferring the one
+  the requester demonstrably reached us on over the `MACHINE_IP` guess (which is
+  `hostname -I | awk '{print $1}'` — a VirtualBox or VPN adapter as often as the right NIC). Which
+  source was used is logged on every `startServer`.
+- **The default `docker compose` deployment never uses that first source.** With `ports: 8000:8000`
+  on a bridge network every connection arrives from the bridge gateway and our side of it is a
+  `172.x` address nobody outside the bridge can route to — and the servers we start publish their
+  ports on the *host* regardless. `HostNetworkDetector` recognises that and falls back to
+  `MACHINE_IP`/`PUBLIC_IP`, so those stay **required** as things stand. Switch the compose file to
+  `network_mode: host` for the reached-address path to take effect.
+- **A server can be stopped individually** through `Server.stop()`, which runs the `stopper` its
+  instantiator installed (`docker kill` for `DockerizedServerInstantiator`). `ThrowableServer`
+  forwards it to the server it wraps.
+- **The wrapper/wrapped listener split is subtle.** `ThrowableServer` subscribes *itself* to the
+  wrapped server's message **and stopped** events (`setSubEventManagerAsSelf`), because the only
+  thing that notices a container dying — `DockerContainerStoppedObserver` — holds the inner
+  `Server`, while the RPC layer subscribes to the wrapper. `ThrowableServerShould` asserts each
+  event fires exactly once on both subscriptions; keep those green if you touch the raise methods.
 - `ci/debug/{server-types,usual-plugins,tmp,logs}` in a working copy may hold hundreds of MB of
   jars and worlds. They are gitignored — do not add them, and do not assume they exist.
 - `src/tools/{SpigotBuilder,PaperBuilder}.sh` are legacy and are `source`d by `WatchWolfSetup.sh`
