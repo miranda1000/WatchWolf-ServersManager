@@ -29,6 +29,67 @@ import static org.mockito.Mockito.when;
 
 public class ServerRequirementsShould {
     public static final String TARGET_SERVER_JAR = "server.jar";
+    public static final String SERVER_VERSION = "1.20";
+
+    //  ================================
+    //    generator-settings tests (D5)
+    //  ================================
+
+    /**
+     * `level-type=FLAT` with no `generator-settings` made every 1.16+ run start with
+     * `-- Server error -- No key layers in MapLike[{}]`, which buried whatever really went wrong.
+     */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"1.8.8", "1.9.4", "1.10.2", "1.11", "1.12", "1.12.2"})
+    public void useTheLegacySuperflatPresetBefore1_13(String serverVersion) {
+        assertEquals(ServerRequirements.FLAT_GENERATOR_SETTINGS_LEGACY, ServerRequirements.getFlatGeneratorSettings(serverVersion));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"1.13", "1.13.2", "1.14", "1.14.4", "1.15", "1.15.2"})
+    public void useNamespacedBlockNamesBetween1_13And1_15(String serverVersion) {
+        assertEquals(ServerRequirements.FLAT_GENERATOR_SETTINGS_NAMESPACED_IDS, ServerRequirements.getFlatGeneratorSettings(serverVersion));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"1.16", "1.16.5", "1.17", "1.18.2", "1.19.4", "1.20", "1.20.4", "1.21"})
+    public void useTheJsonPresetFrom1_16(String serverVersion) {
+        assertEquals(ServerRequirements.FLAT_GENERATOR_SETTINGS_JSON, ServerRequirements.getFlatGeneratorSettings(serverVersion));
+    }
+
+    @Test
+    public void assumeTheModernPresetForAVersionItCannotRead() {
+        // custom server types may version themselves however they like
+        assertEquals(ServerRequirements.FLAT_GENERATOR_SETTINGS_JSON, ServerRequirements.getFlatGeneratorSettings("nightly-2024-01-01"));
+    }
+
+    @Test
+    public void writeAGeneratorSettingsLineForFlatWorlds() throws Exception {
+        try (FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix())) {
+            Path serverFolder = fileSystem.getPath("/server");
+            Files.createDirectories(serverFolder);
+
+            getSetServerProperties().invoke(null, serverFolder, 25565, WorldType.FLAT, "1.16.5", "1");
+
+            List<String> properties = Files.readAllLines(serverFolder.resolve("server.properties"));
+            assertTrue(properties.contains("level-type=FLAT"), properties.toString());
+            assertTrue(properties.contains("generator-settings=" + ServerRequirements.FLAT_GENERATOR_SETTINGS_JSON), properties.toString());
+        }
+    }
+
+    @Test
+    public void notWriteAGeneratorSettingsLineForNonFlatWorlds() throws Exception {
+        try (FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix())) {
+            Path serverFolder = fileSystem.getPath("/server");
+            Files.createDirectories(serverFolder);
+
+            getSetServerProperties().invoke(null, serverFolder, 25565, WorldType.DEFAULT, "1.16.5", "1");
+
+            List<String> properties = Files.readAllLines(serverFolder.resolve("server.properties"));
+            assertTrue(properties.stream().noneMatch(line -> line.startsWith("generator-settings=")), properties.toString());
+        }
+    }
+
 
     //  =======================
     //    copyServerJar tests
@@ -193,7 +254,7 @@ public class ServerRequirementsShould {
 
 
     private static Method getSetServerProperties() throws NoSuchMethodException {
-        Method method = ServerRequirements.class.getDeclaredMethod("setServerProperties", Path.class, int.class, WorldType.class, String.class);
+        Method method = ServerRequirements.class.getDeclaredMethod("setServerProperties", Path.class, int.class, WorldType.class, String.class, String.class);
         method.setAccessible(true);
         return method;
     }
@@ -206,7 +267,7 @@ public class ServerRequirementsShould {
         WorldType type = WorldType.FLAT;
         String seed = "1";
 
-        getSetServerProperties().invoke(null, dstPath, port, type, seed);
+        getSetServerProperties().invoke(null, dstPath, port, type, SERVER_VERSION, seed);
 
         Map<String, String> contents = new HashMap<>();
         for (String line : Files.readAllLines(outFile)) {
@@ -231,7 +292,7 @@ public class ServerRequirementsShould {
         String seed = "";
 
         // act
-        getSetServerProperties().invoke(null, dstPath, port, type, seed);
+        getSetServerProperties().invoke(null, dstPath, port, type, SERVER_VERSION, seed);
 
         // assert
         assertTrue(Files.exists(outFile)); // the file should exist

@@ -22,6 +22,14 @@ public class ServersManagerLocalImplementation implements ServersManagerPetition
     private final CapturedExceptionEvent capturedExceptionEventManager;
     private final RequesteeIpGetter requesteeIpGetter;
 
+    /**
+     * The server this connection is currently using, if any.
+     * One connection asks for one server, so a second `startServer` means the first one was
+     * abandoned -- and an abandoned container keeps its ports, which is what makes the *next* run
+     * fail with an EOFException on a socket somebody else now owns.
+     */
+    private ThrowableServer currentServer;
+
     public ServersManagerLocalImplementation(ServersManager serversManager, ServerStartedEvent serverStartedEventManager, CapturedExceptionEvent capturedExceptionEventManager, RequesteeIpGetter ipGetter) {
         this.serversManager = serversManager;
         this.serverStartedEventManager = serverStartedEventManager;
@@ -35,6 +43,7 @@ public class ServersManagerLocalImplementation implements ServersManagerPetition
     @Override
     public String startServer(final String serverType, final String serverVersion, Collection<Plugin> plugins, WorldType worldType, String seed, Collection<ConfigFile> maps, Collection<ConfigFile> configFiles) throws IOException {
         System.out.println("Starting server...");
+        this.stopPreviousServer();
         try {
             // requesteeIpGetter will work because `startServer` gets called on a syncronized environment (by `forwardCall`), so we'll have the IP of the client calling this function
             final ThrowableServer server = this.serversManager.startServer(serverType, serverVersion, plugins, worldType, seed, maps, configFiles, this.requesteeIpGetter.getRequesteeIp());
@@ -42,12 +51,16 @@ public class ServersManagerLocalImplementation implements ServersManagerPetition
             server.subscribeToServerStartedEvents(this.serverStartedEventManager);
             server.subscribeToServerStoppedEvents(() -> {
                 System.out.println("Server " + serverType + " " + serverVersion + " (" + server.getIp() + ") stopped");
+                this.forget(server);
             });
             server.subscribeToExceptionEvents((msg) -> {
                 System.err.println("Got exception on " + serverType + " " + serverVersion + " server:\n" + msg);
                 this.capturedExceptionEventManager.capturedException(msg);
             });
 
+            synchronized (this) {
+                this.currentServer = server;
+            }
             return server.getIp();
         } catch (ServerJarUnavailableException ex) {
             String errorMessage = "Couldn't start a " + serverType + " server, on " + serverVersion + ": " + ex.toString();
@@ -55,5 +68,28 @@ public class ServersManagerLocalImplementation implements ServersManagerPetition
             capturedExceptionEventManager.capturedException(errorMessage);
             return ""; // no server
         }
+    }
+
+    /**
+     * Takes down the server this connection had before, if it never stopped on its own.
+     */
+    private void stopPreviousServer() {
+        ThrowableServer previous;
+        synchronized (this) {
+            previous = this.currentServer;
+            this.currentServer = null;
+        }
+        if (previous == null) return;
+
+        System.out.println("This connection still had " + previous.getIp() + " registered; stopping it before starting a new one");
+        try {
+            previous.stop();
+        } catch (Exception ex) {
+            System.err.println("Couldn't stop the previous server (" + previous.getIp() + "): " + ex.toString());
+        }
+    }
+
+    private synchronized void forget(ThrowableServer server) {
+        if (this.currentServer == server) this.currentServer = null;
     }
 }
