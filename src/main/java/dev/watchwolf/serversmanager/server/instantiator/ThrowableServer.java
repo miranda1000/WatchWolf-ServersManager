@@ -30,6 +30,21 @@ public class ThrowableServer extends Server {
         // now the listener are us
         this.wrappedServer.serverMessageListeners.remove(this.wrappedServer);
         this.wrappedServer.subscribeToServerMessageEvents(this);
+
+        // "the server stopped" is noticed by whoever watches the container, and it only ever knows
+        // about the wrapped server -- so the wrapper has to listen to it, the same way it does for
+        // messages. Without this, everything subscribed through the wrapper (the RPC layer, and so
+        // the Tester) is never told a server died.
+        this.wrappedServer.subscribeToServerStoppedEvents(this::raiseOwnServerStoppedEvent);
+    }
+
+    /**
+     * Notifies only what subscribed through the wrapper. The wrapped server's own listeners are
+     * notified by the wrapped server itself, and doing it here too would fire them twice.
+     */
+    private void raiseOwnServerStoppedEvent() {
+        this.logger.traceEntry();
+        for (ServerStopNotifier e : this.serverStoppedListeners) e.onServerStop();
     }
 
     void raiseExceptionEvent(String msg) {
@@ -49,8 +64,14 @@ public class ThrowableServer extends Server {
 
     @Override
     void raiseServerStoppedEvent() {
+        // our own listeners are reached through the subscription setSubEventManagerAsSelf installed,
+        // so that a stop noticed on the wrapped server and one raised here behave identically
         this.wrappedServer.raiseServerStoppedEvent();
-        for (ServerStopNotifier e : this.serverStoppedListeners) e.onServerStop();
+    }
+
+    @Override
+    public void stop() {
+        this.wrappedServer.stop();
     }
 
     @Override

@@ -238,6 +238,7 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
         DockerizedServerInstantiator.attachStdio(dockerClient, container, new StdioAdapter(serverId, stdioCallback));
 
         server.set(new Server(DockerizedServerInstantiator.getStartedServerIp(container.getId())));
+        server.get().setStopper(() -> DockerizedServerInstantiator.killContainer(container.getId()));
 
         synchronized (this) {
             // launch server stopped event when stopped
@@ -248,6 +249,29 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
 
         synchronized (DockerizedServerInstantiator.class) {
             return logger.traceExit(server.get());
+        }
+    }
+
+    /**
+     * @param name Container name as Docker reports it
+     * @return The name without Docker's leading '/'
+     */
+    static String stripDockerNamePrefix(String name) {
+        return (name != null && name.startsWith("/")) ? name.substring(1) : name;
+    }
+
+    /**
+     * Kills a container, best effort: a container that is already gone is the outcome we wanted.
+     * @param containerId Container to kill
+     */
+    private static void killContainer(String containerId) {
+        logger.info("Stopping container " + containerId + "...");
+        DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
+        final DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
+        try {
+            dockerClient.killContainerCmd(containerId).exec();
+        } catch (Exception ex) {
+            logger.warn("Couldn't kill container " + containerId + ": " + ex.toString());
         }
     }
 
@@ -267,15 +291,15 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
             boolean anyNameMatch = false;
             synchronized (this) {
                 for (String name : container.getNames()) {
-                    anyNameMatch |= this.serverListeners.stream().anyMatch(lis -> lis.getServerId().equals(name));
+                    // Docker reports names with a leading '/'; comparing them raw never matched, so
+                    // this loop used to skip every container and stop nothing at all
+                    final String containerName = stripDockerNamePrefix(name);
+                    anyNameMatch |= this.serverListeners.stream().anyMatch(lis -> lis.getServerId().equals(containerName));
                 }
             }
             if (!anyNameMatch) continue; // not launched by this instantiator; skip
 
-            System.out.println("Stopping container " + container.getId() + "...");
-            try {
-                dockerClient.killContainerCmd(container.getId()).exec();
-            } catch (Exception ignore) {}
+            DockerizedServerInstantiator.killContainer(container.getId());
         }
         synchronized (DockerizedServerInstantiator.class) {
             logger.traceExit();

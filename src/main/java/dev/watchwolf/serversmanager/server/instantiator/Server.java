@@ -21,6 +21,13 @@ public class Server implements ServerMessageEvent {
                             headerErrorRegex = headerRegex.replace("{severity}", "ERROR");
 
     private String ip;
+
+    /**
+     * How to take this server down. Set by whoever instantiated it, since only they know what
+     * "stopping" means for it.
+     */
+    private Runnable stopper;
+
     protected final Collection<ServerStartedEvent> serverStartedListeners;
     protected final Collection<ServerStopNotifier> serverStoppedListeners;
     protected final Collection<ServerMessageEvent> serverMessageListeners;
@@ -55,6 +62,26 @@ public class Server implements ServerMessageEvent {
 
     public void setIp(String ip) {
         this.ip = ip;
+    }
+
+    /**
+     * @param stopper What takes this server down
+     */
+    public void setStopper(Runnable stopper) {
+        this.stopper = stopper;
+    }
+
+    /**
+     * Takes the server down. Does nothing if whoever instantiated it didn't say how.
+     * The "stopped" event is raised by whatever notices the server is gone, not from here.
+     */
+    public void stop() {
+        this.logger.traceEntry();
+        if (this.stopper == null) {
+            this.logger.warn("Asked to stop " + this.getIp() + ", but no one said how to");
+            return;
+        }
+        this.stopper.run();
     }
 
     public String getIp() {

@@ -83,6 +83,97 @@ public class ThrowableServerShould extends ServerShould {
         }
     }
 
+    /**
+     * The Docker watcher only ever knows about the wrapped server, but the RPC layer subscribes to
+     * the wrapper -- so a killed container used to notify nobody, and the Tester found out only when
+     * its next read threw an EOFException.
+     */
+    @Test
+    void notifyTheWrapperWhenTheWrappedServerStops() throws Exception {
+        final AtomicInteger onWrapper = new AtomicInteger(0);
+
+        Server wrapped = super.getServer();
+        ThrowableServer uut = new ThrowableServer(wrapped);
+        uut.subscribeToServerStoppedEvents(onWrapper::incrementAndGet);
+
+        wrapped.raiseServerStoppedEvent(); // this is what DockerContainerStoppedObserver calls
+
+        assertEquals(1, onWrapper.get(), "a stop noticed on the wrapped server must reach the wrapper");
+    }
+
+    @Test
+    void notifyEverySubscriberExactlyOnceWhenTheWrappedServerStops() throws Exception {
+        final AtomicInteger onWrapped = new AtomicInteger(0), onWrapper = new AtomicInteger(0);
+
+        Server wrapped = super.getServer();
+        wrapped.subscribeToServerStoppedEvents(onWrapped::incrementAndGet);
+        ThrowableServer uut = new ThrowableServer(wrapped);
+        uut.subscribeToServerStoppedEvents(onWrapper::incrementAndGet);
+
+        wrapped.raiseServerStoppedEvent();
+
+        assertEquals(1, onWrapped.get(), "the wrapped server's own subscriber fired " + onWrapped.get() + " time(s)");
+        assertEquals(1, onWrapper.get(), "the wrapper's subscriber fired " + onWrapper.get() + " time(s)");
+    }
+
+    @Test
+    void notifyEverySubscriberExactlyOnceWhenTheWrapperStops() throws Exception {
+        final AtomicInteger onWrapped = new AtomicInteger(0), onWrapper = new AtomicInteger(0);
+
+        Server wrapped = super.getServer();
+        wrapped.subscribeToServerStoppedEvents(onWrapped::incrementAndGet);
+        ThrowableServer uut = new ThrowableServer(wrapped);
+        uut.subscribeToServerStoppedEvents(onWrapper::incrementAndGet);
+
+        uut.raiseServerStoppedEvent();
+
+        assertEquals(1, onWrapped.get(), "the wrapped server's own subscriber fired " + onWrapped.get() + " time(s)");
+        assertEquals(1, onWrapper.get(), "the wrapper's subscriber fired " + onWrapper.get() + " time(s)");
+    }
+
+    @Test
+    void notifyEverySubscriberExactlyOnceWhenTheServerStarts() throws Exception {
+        final AtomicInteger onWrapped = new AtomicInteger(0), onWrapper = new AtomicInteger(0);
+
+        Server wrapped = super.getServer();
+        wrapped.subscribeToServerStartedEvents(onWrapped::incrementAndGet);
+        ThrowableServer uut = new ThrowableServer(wrapped);
+        uut.subscribeToServerStartedEvents(onWrapper::incrementAndGet);
+
+        // the console line is what actually raises it, through the message listeners
+        uut.raiseServerMessageEvent("[08:48:36] [Server thread/INFO]: Done (21.650s)! For help, type \"help\"");
+
+        assertEquals(1, onWrapped.get(), "the wrapped server's own subscriber fired " + onWrapped.get() + " time(s)");
+        assertEquals(1, onWrapper.get(), "the wrapper's subscriber fired " + onWrapper.get() + " time(s)");
+    }
+
+    @Test
+    void notifyEveryMessageSubscriberExactlyOnce() throws Exception {
+        final AtomicInteger onWrapped = new AtomicInteger(0), onWrapper = new AtomicInteger(0);
+
+        Server wrapped = super.getServer();
+        wrapped.subscribeToServerMessageEvents((msg) -> onWrapped.incrementAndGet());
+        ThrowableServer uut = new ThrowableServer(wrapped);
+        uut.subscribeToServerMessageEvents((msg) -> onWrapper.incrementAndGet());
+
+        uut.raiseServerMessageEvent("[08:48:35] [Server thread/INFO]: hello");
+
+        assertEquals(1, onWrapped.get(), "the wrapped server's own subscriber fired " + onWrapped.get() + " time(s)");
+        assertEquals(1, onWrapper.get(), "the wrapper's subscriber fired " + onWrapper.get() + " time(s)");
+    }
+
+    @Test
+    void stopTheWrappedServer() {
+        final AtomicInteger stopped = new AtomicInteger(0);
+
+        Server wrapped = super.getServer();
+        wrapped.setStopper(stopped::incrementAndGet);
+
+        new ThrowableServer(wrapped).stop();
+
+        assertEquals(1, stopped.get(), "stopping the wrapper must stop the server it wraps");
+    }
+
     @Test
     void notifyMessageEventsDefinedOnWrapper() throws Exception {
         final AtomicReference<String> syncronizedObject = new AtomicReference<>(null);
