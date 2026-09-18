@@ -48,6 +48,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Copy the built JAR to the debug directory so run.sh uses the latest build
+# (run.sh builds a Docker image from ci/debug/Dockerfile which ADDs ServersManager.jar)
+echo "[v] Copying built JAR to ci/debug/ServersManager.jar..."
+cp "$base_path/target/watchwolf-servers-manager-*.jar" "$script_path/ServersManager.jar"
+
 if [ $test -eq 1 ]; then
     # all dependencies done; run
     # copy WW-Server as a usual plugin

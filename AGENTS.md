@@ -38,6 +38,11 @@ ci/release/                             build & run against the published releas
 ./ci/debug/build.sh --preclean --test   # + assemble ServersManager.jar and build the container
 ./ci/debug/run.sh                       # docker run (builds image if missing)
 ./ci/debug/run.sh --force-recreate      # rebuild image and run
+
+**Note:** `build.sh` compiles to `target/watchwolf-servers-manager-*.jar` and then copies it to
+`ci/debug/ServersManager.jar`. The `run.sh` script builds a Docker image from `ci/debug/Dockerfile`
+which `ADD`s `ServersManager.jar` — so always run `build.sh` before `run.sh` to ensure the container
+uses the latest build.
 ./ci/debug/tests.sh --unit
 ./ci/debug/tests.sh --integration
 ./ci/debug/tests.sh --unit --tests 'ServerRequirementsShould'
