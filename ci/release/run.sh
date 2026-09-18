@@ -27,6 +27,7 @@ export PARENT_PWD="$script_path"
 export SERVER_PATH_SHIFT="."
 
 docker run -d --rm --name ServersManager \
+    --network host \
     -p 8000:8000 \
     -v "$script_path/server-types:/servers/server-types" \
     -v "$script_path/usual-plugins:/servers/usual-plugins" \
