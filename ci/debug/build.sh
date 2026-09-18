@@ -62,5 +62,5 @@ if [ $test -eq 1 ]; then
 
     # build the docker
     echo "[v] Building Docker container..."
-    docker compose build --no-cache
+    docker build --tag servers-manager --no-cache .
 fi

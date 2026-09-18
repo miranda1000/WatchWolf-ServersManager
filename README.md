@@ -67,14 +67,14 @@ it downloads the latest ServersManager release and builds the image.
 
 This is what the [WatchWolf setup script](https://github.com/watch-wolf/WatchWolf) invokes. It
 exports `MACHINE_IP`, `PUBLIC_IP`, `PARENT_PWD` and `SERVER_PATH_SHIFT` and runs
-`docker compose up --detach`.
+`docker run` with the `servers-manager` image.
 
 The container bind-mounts `/var/run/docker.sock`, so the servers it starts are **siblings** on the
 host rather than nested containers — that is why the paths it passes around have to be host paths.
 
 ## Data folders
 
-All of these live next to the compose file, in `ci/release/` (or `ci/debug/`), and are gitignored:
+All of these live in `ci/release/` (or `ci/debug/`), and are gitignored:
 
 | Folder | Contents |
 | --- | --- |

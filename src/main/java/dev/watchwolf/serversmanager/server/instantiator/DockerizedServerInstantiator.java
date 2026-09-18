@@ -208,7 +208,7 @@ public class DockerizedServerInstantiator implements ServerInstantiator {
             int socketPort = port + 1;
 
             // equivalent to:
-            // docker run -i --rm --name "$id" -p "$port:$port/tcp" -p "$port:$port/udp" -p "$socket_port:$socket_port" ${memory:+"--memory=$memory"} ${cpus:+"--cpus=$cpus"} -v "$(pwd)/$path":/server "openjdk:$java_version"
+            // docker run -i --rm --name "$id" -p "$port:$port/tcp" -p "$port:$port/udp" -p "$socket_port:$socket_port" ${memory:+"--memory=$memory"} ${cpus:+"--cpus=$cpus"} -v "$(pwd)/$path":/server "eclipse-temurin:$java_version"
             // TODO specify max memory
             String dockerImage = DockerizedServerInstantiator.getDockerImageForJavaVersion(javaVersion);
             container = dockerClient.createContainerCmd(dockerImage)

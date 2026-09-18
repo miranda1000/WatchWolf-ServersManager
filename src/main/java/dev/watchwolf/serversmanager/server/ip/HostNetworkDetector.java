@@ -13,12 +13,12 @@ import java.util.Enumeration;
  *
  * It decides whether the address a requester reached us on is worth anything to them. The Minecraft
  * servers we start are *sibling* containers: their ports are published on the **host**, not in our
- * namespace. So when we run in a container of our own -- the default `docker compose` deployment
+ * namespace. So when we run in a container of our own -- the default `docker run` deployment
  * publishes `8000:8000` on a bridge network -- every connection reaches us as the bridge gateway and
  * our own side of it is a `172.x` address nobody outside the bridge can route to. Handing that back
  * would be strictly worse than the `MACHINE_IP` guess it replaced.
  *
- * With `network_mode: host`, or when running straight on the host, our address *is* the host's, and
+ * With `--network host`, or when running straight on the host, our address *is* the host's, and
  * it is the best answer available: it is the interface the requester demonstrably reached.
  *
  * The signal is that a bridged container sees only `lo` and its own `eth*`, while a process sharing
