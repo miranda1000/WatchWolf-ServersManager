@@ -9,6 +9,7 @@ import dev.watchwolf.serversmanager.server.instantiator.ServerInstantiator;
 import dev.watchwolf.serversmanager.server.instantiator.ThrowableServer;
 import dev.watchwolf.serversmanager.server.ip.ExternalizeIpManager;
 import dev.watchwolf.serversmanager.server.ip.IpManager;
+import dev.watchwolf.serversmanager.server.ip.ReachedAddressIpManager;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,7 +37,9 @@ public class ServersManager implements Closeable {
 
     public ServersManager(ServerInstantiator serverInstantiator) {
         this.serverInstantiator = serverInstantiator;
-        this.ipManager = new ExternalizeIpManager(System.getenv("MACHINE_IP"), System.getenv("PUBLIC_IP"));
+        // prefer the address the requester actually reached us on; MACHINE_IP/PUBLIC_IP is the guess
+        // we fall back to when ours aren't the host's addresses (see ReachedAddressIpManager)
+        this.ipManager = new ReachedAddressIpManager(new ExternalizeIpManager(System.getenv("MACHINE_IP"), System.getenv("PUBLIC_IP")));
     }
 
     @Override
@@ -62,7 +65,10 @@ public class ServersManager implements Closeable {
 
         System.out.println("Starting " + serverType + " " + serverVersion + " server on " + path + "...");
         final Server server = this.serverInstantiator.startServer(Paths.get(path), TARGET_SERVER_JAR, DockerUtilities.getJavaVersion(serverVersion));
-        server.setIp(this.ipManager.getIp(server.getIp(), serverRequestee));
+        String reportedIp = server.getIp();
+        server.setIp(this.ipManager.getIp(reportedIp, serverRequestee));
+        System.out.println("Server " + serverType + " " + serverVersion + " is up on " + reportedIp
+                + "; answering " + serverRequestee + " with " + server.getIp());
 
         // keep the logs
         String serverUUID = ServerRequirements.getHashFromServerPath(path);

@@ -1,6 +1,7 @@
 package dev.watchwolf.serversmanager.server;
 
 import dev.watchwolf.core.entities.ServerType;
+import dev.watchwolf.core.utils.Version;
 import dev.watchwolf.core.entities.WorldType;
 import dev.watchwolf.core.entities.files.ConfigFile;
 import dev.watchwolf.core.entities.files.ZipFile;
@@ -29,6 +30,16 @@ import java.util.stream.Collectors;
 
 public class ServerRequirements {
     public static final String SHARED_TMP_FOLDER = "{pwd}/{offset}/tmp";
+
+    /**
+     * bedrock, 2 dirt, grass; plains biome. The classic superflat, in the three shapes Minecraft has
+     * asked for it in. No structures are requested: a test world has no use for villages, and every
+     * extra field is one more thing a version can disagree about.
+     * @see #getFlatGeneratorSettings(String)
+     */
+    static final String FLAT_GENERATOR_SETTINGS_LEGACY = "3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1";
+    static final String FLAT_GENERATOR_SETTINGS_NAMESPACED_IDS = "minecraft:bedrock,2*minecraft:dirt,minecraft:grass_block;minecraft:plains";
+    static final String FLAT_GENERATOR_SETTINGS_JSON = "{\"layers\":[{\"block\":\"minecraft:bedrock\",\"height\":1},{\"block\":\"minecraft:dirt\",\"height\":2},{\"block\":\"minecraft:grass_block\",\"height\":1}],\"biome\":\"minecraft:plains\"}";
 
     private static final Logger logger = LogManager.getLogger(ServerRequirements.class.getName());
     private static boolean serverFolderInfoLogged = false;
@@ -83,19 +94,52 @@ settings:
      * @param targetFolder Out folder
      * @throws IOException Failed to create the file
      */
-    private static void setServerProperties(Path targetFolder, int port, WorldType serverType, String seed) throws IOException {
-        String []serverProperties = new String[]{
+    private static void setServerProperties(Path targetFolder, int port, WorldType worldType, String serverVersion, String seed) throws IOException {
+        List<String> serverProperties = new ArrayList<>(Arrays.asList(
                 "online-mode=false",
                 "white-list=true",
                 "motd=Minecraft test server",
                 "max-players=100",
                 "spawn-protection=0",
                 "server-port=" + port,
-                "level-type=" + serverType.name().toUpperCase(),
+                "level-type=" + worldType.name().toUpperCase(),
                 "level-seed=" + (seed == null ? "" : seed)
-        };
+        ));
+        if (worldType == WorldType.FLAT) serverProperties.add("generator-settings=" + getFlatGeneratorSettings(serverVersion));
 
         Files.write(targetFolder.resolve("server.properties"), String.join("\n", serverProperties).getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+    }
+
+    /**
+     * The superflat preset to write next to `level-type=FLAT`.
+     *
+     * `level-type=FLAT` with an empty `generator-settings` is not a valid server: from 1.16 the
+     * server parses the (empty) value as the generator's JSON config and every single run starts
+     * with `-- Server error -- No key layers in MapLike[{}]`, which buries whatever really went
+     * wrong. The format changed twice, so the preset has to match the version:
+     *
+     * <ul>
+     *   <li>up to 1.12.2 -- `<format version>;<layers>;<biome id>`</li>
+     *   <li>1.13 to 1.15.2 -- `<layers>;<biome name>`, no format version</li>
+     *   <li>1.16 and later -- JSON</li>
+     * </ul>
+     *
+     * @param serverVersion Minecraft version the server will run
+     * @return A `generator-settings` value that version understands
+     */
+    static String getFlatGeneratorSettings(String serverVersion) {
+        Version version;
+        try {
+            version = new Version(serverVersion);
+        } catch (IllegalArgumentException ex) {
+            // a custom server type may be versioned however it likes; assume it is a current one
+            logger.warn("Couldn't read '" + serverVersion + "' as a Minecraft version; assuming the modern generator-settings format");
+            return FLAT_GENERATOR_SETTINGS_JSON;
+        }
+
+        if (version.roundTo(2).compareTo("1.13") < 0) return FLAT_GENERATOR_SETTINGS_LEGACY; // up to 1.12.2
+        if (version.roundTo(2).compareTo("1.16") < 0) return FLAT_GENERATOR_SETTINGS_NAMESPACED_IDS; // 1.13 .. 1.15.2
+        return FLAT_GENERATOR_SETTINGS_JSON;
     }
 
     /**
@@ -188,7 +232,7 @@ settings:
             logger.debug("Generating timings configuration...");
             setTimingsSettings(serverFolder);
             logger.debug("Generating server properties file...");
-            setServerProperties(serverFolder, 25565, worldType, seed);
+            setServerProperties(serverFolder, 25565, worldType, serverVersion, seed);
             logger.debug("Generating WW-server config file...");
             setWatchWolfServerProperties(serverFolder, "127.0.0.1" /* TODO unused by WW-Server (for now) */, 25566 /* TODO don't depend on DockerizedServerInstantiator#startServer ports */);
 

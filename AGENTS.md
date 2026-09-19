@@ -36,14 +36,20 @@ ci/release/                             build & run against the published releas
 ```bash
 ./ci/debug/build.sh --preclean          # compile (dockerized maven:3.8.3-openjdk-17)
 ./ci/debug/build.sh --preclean --test   # + assemble ServersManager.jar and build the container
-./ci/debug/run.sh                       # docker compose up
+./ci/debug/run.sh                       # docker run (builds image if missing)
+./ci/debug/run.sh --force-recreate      # rebuild image and run
+
+**Note:** `build.sh` compiles to `target/watchwolf-servers-manager-*.jar` and then copies it to
+`ci/debug/ServersManager.jar`. The `run.sh` script builds a Docker image from `ci/debug/Dockerfile`
+which `ADD`s `ServersManager.jar` — so always run `build.sh` before `run.sh` to ensure the container
+uses the latest build.
 ./ci/debug/tests.sh --unit
 ./ci/debug/tests.sh --integration
 ./ci/debug/tests.sh --unit --tests 'ServerRequirementsShould'
 ./ci/debug/validator.sh                 # test-naming lint
 
 ./ci/release/build.sh                   # downloads the latest GitHub release jar, builds the image
-./ci/release/run.sh                     # docker compose up (this is what WatchWolfSetup.sh runs)
+./ci/release/run.sh                     # docker run (this is what WatchWolfSetup.sh runs)
 ```
 
 **`--preclean` is not optional when the WW-Core jar changes.** The `local-ww-core-profile`
@@ -67,8 +73,8 @@ host. Paths inside the config therefore have to be host paths — that is what `
 
 | Env var | Meaning |
 | --- | --- |
-| `MACHINE_IP` | LAN IP handed to testers on the same network |
-| `PUBLIC_IP` | IP handed to testers coming from outside |
+| `MACHINE_IP` | LAN IP handed to testers on the same network (**fallback**, see below) |
+| `PUBLIC_IP` | IP handed to testers coming from outside (**fallback**, see below) |
 | `PARENT_PWD` | Host path of `ci/<flavour>/`, so bind mounts resolve |
 | `SERVER_PATH_SHIFT` | Prefix for `server-types/`, `tmp/`, `logs/` (`.` in the container) |
 
@@ -104,6 +110,24 @@ Ports: the manager is on **8000**; each server takes a **consecutive pair** star
 - `RequesteeIpGetter` works because `startServer` is invoked from inside `forwardCall`'s
   `synchronized` block, so "the last channel we read from" is the caller. Keep that invariant if
   you touch threading.
+- **`ReachedAddressIpManager` decides the address `startServer` answers with**, preferring the one
+  the requester demonstrably reached us on over the `MACHINE_IP` guess (which is
+  `hostname -I | awk '{print $1}'` — a VirtualBox or VPN adapter as often as the right NIC). Which
+  source was used is logged on every `startServer`.
+- **The default `docker run` deployment never uses that first source.** With `-p 8000:8000`
+  on a bridge network every connection arrives from the bridge gateway and our side of it is a
+  `172.x` address nobody outside the bridge can route to — and the servers we start publish their
+  ports on the *host* regardless. `HostNetworkDetector` recognises that and falls back to
+  `MACHINE_IP`/`PUBLIC_IP`, so those stay **required** as things stand. Switch the run command to
+  `--network host` for the reached-address path to take effect.
+- **A server can be stopped individually** through `Server.stop()`, which runs the `stopper` its
+  instantiator installed (`docker kill` for `DockerizedServerInstantiator`). `ThrowableServer`
+  forwards it to the server it wraps.
+- **The wrapper/wrapped listener split is subtle.** `ThrowableServer` subscribes *itself* to the
+  wrapped server's message **and stopped** events (`setSubEventManagerAsSelf`), because the only
+  thing that notices a container dying — `DockerContainerStoppedObserver` — holds the inner
+  `Server`, while the RPC layer subscribes to the wrapper. `ThrowableServerShould` asserts each
+  event fires exactly once on both subscriptions; keep those green if you touch the raise methods.
 - `ci/debug/{server-types,usual-plugins,tmp,logs}` in a working copy may hold hundreds of MB of
   jars and worlds. They are gitignored — do not add them, and do not assume they exist.
 - `src/tools/{SpigotBuilder,PaperBuilder}.sh` are legacy and are `source`d by `WatchWolfSetup.sh`
