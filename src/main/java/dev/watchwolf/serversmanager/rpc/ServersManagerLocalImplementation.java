@@ -47,6 +47,7 @@ public class ServersManagerLocalImplementation implements ServersManagerPetition
                 System.err.println("Got exception on " + serverType + " " + serverVersion + " server:\n" + msg);
                 this.capturedExceptionEventManager.capturedException(msg);
             });
+
             return server.getIp();
         } catch (ServerJarUnavailableException ex) {
             String errorMessage = "Couldn't start a " + serverType + " server, on " + serverVersion + ": " + ex.toString();
