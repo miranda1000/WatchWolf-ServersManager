@@ -18,14 +18,9 @@ uses a disposable `ubuntu:24.04` helper with host networking to install and run
 the detached manager keeps running with the existing host mounts and Docker socket.
 Download/tool failures stop startup instead of launching with empty addresses.
 
-For offline or explicitly configured addresses, provide both variables:
-
-```sh
-MACHINE_IP=192.168.1.10 PUBLIC_IP=203.0.113.10 ./ci/debug/run.sh
-```
-
-With both values supplied, the helper skips package installation and IP lookup.
-An uncached helper image still requires an initial Docker pull.
+Both addresses are discovered on every launch; host `MACHINE_IP` and `PUBLIC_IP`
+values are ignored. The helper requires network access to install its tools and
+look up the public address.
 
 #### Run system tests
 
