@@ -1,4 +1,25 @@
+#!/bin/sh
+set -eu
+
+script_path=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# Install download and parsing tools in a disposable container.
+docker run --rm -i --env HOME=/tmp \
+    --env BUILD_UID="$(id -u)" --env BUILD_GID="$(id -g)" \
+    --volume "$script_path:/prepare" \
+    --workdir /prepare --entrypoint /bin/bash \
+    ubuntu:24.04 -c '
+        set -e
+        apt-get update
+        apt-get install -y --no-install-recommends ca-certificates coreutils grep jq wget util-linux
+        # Write artifacts as the invoking user after installing tools as root.
+        exec setpriv --reuid "$BUILD_UID" --regid "$BUILD_GID" --clear-groups \
+            /bin/bash -s -- "$@"
+    ' bash "$@" <<'PREPARE'
 #!/bin/bash
+set -e
+
+# Runs inside the temporary container, with ci/release as the working directory.
 
 # check for dependencies
 if [ ! -d "server-types" ]; then
@@ -11,7 +32,7 @@ if [ ! -d "usual-plugins" ]; then
 fi
 
 # create dependent folders
-mkdir tmp 2>/dev/null
+mkdir -p tmp
 
 if [ `ls -l server-types 2>&1 | grep -c '^d'` -eq 0 ]; then
     echo "[w] You don't have any server type in the folder. To get the default server types check the following link:"
@@ -52,9 +73,16 @@ else
 fi
 
 # download the latest ServersManager
-latest_program_url=$(wget -q -O - 'https://api.github.com/repos/rogermiranda1000/WatchWolf-ServersManager/releases/latest' | jq -r '.assets[] | select( .name | endswith(".jar") ) | .browser_download_url')
-wget -O "ServersManager.jar" "$latest_program_url"
+release_metadata=$(wget --timeout=30 --tries=2 -q -O - 'https://api.github.com/repos/miranda1000/WatchWolf-ServersManager/releases/latest')
+latest_program_url=$(printf '%s\n' "$release_metadata" | jq -er '[.assets[] | select(.name | endswith(".jar")) | .browser_download_url] | if length == 1 then .[0] else error("Expected one ServersManager jar") end')
+download_tmp=$(mktemp .servers-manager-download.XXXXXX)
+trap 'rm -f "$download_tmp"' EXIT
+wget --timeout=30 --tries=2 -O "$download_tmp" "$latest_program_url"
+test -s "$download_tmp"
+mv "$download_tmp" ServersManager.jar
+trap - EXIT
 
-# build the docker
+PREPARE
+
 echo "[v] Building Docker container..."
-docker build --tag servers-manager --no-cache .
+docker build --tag servers-manager --no-cache "$script_path"

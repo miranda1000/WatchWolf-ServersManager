@@ -53,11 +53,22 @@ the Minecraft version (Java 8 below 1.17, 16 for 1.17, 17 up to 1.20.4, 21 from 
 `--preclean` matters: the WatchWolf-Core jar in `lib/` is installed into your local Maven
 repository during the **clean** phase, so skipping it will keep using whatever was there before.
 
-Add `--test` to also assemble `ServersManager.jar` and build the Docker image; that mode expects a
-`watchwolf-server-<version>.jar` in `ci/debug/`.
+The debug build expects exactly one `watchwolf-server-<version>.jar` in `ci/debug/`.
+It compiles and assembles `ServersManager.jar`, prepares the plugin, and builds the
+`servers-manager` Docker image.
 
 For a build against the published releases instead of local jars, use `./ci/release/build.sh` —
-it downloads the latest ServersManager release and builds the image.
+it downloads the latest ServersManager and WatchWolf-Server releases and builds the image.
+Create `ci/release/server-types/` and `ci/release/usual-plugins/` first (normally done by setup).
+
+Both scripts can be called from any working directory. Artifact preparation runs in a
+temporary container using commands embedded in each `build.sh`. Debug uses the Maven image
+directly; release uses Ubuntu and installs its download and parsing tools during the run.
+Only the final runtime image is built. Maven, wget, jq, and GNU grep/sort run inside Docker,
+so the host only needs Docker and standard shell utilities. The debug build reuses `$HOME/.m2` for Maven
+dependencies. Generated files belong to the invoking user, and a failed preparation stops
+the build before the runtime image is built. The runtime Dockerfiles remain separate from
+the build tooling.
 
 ## Run
 
